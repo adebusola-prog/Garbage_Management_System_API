@@ -4,15 +4,12 @@ from django.urls import reverse
 
 from phonenumber_field.modelfields import PhoneNumberField
 
-
 class InactiveManager(models.Manager):
    
     def get_queryset(self):
         return super().get_queryset().filter(is_active=False)
-
-
+    
 class ActiveManager(models.Manager):
-
     def get_queryset(self):
         return super().get_queryset().filter(is_active=True)
     
@@ -25,6 +22,7 @@ class UnacceptedGarbageCollector(models.Manager):
         return super().get_queryset().filter(is_accepted=False)
 
 class CustomUser(AbstractUser):
+    """ User's sign_up fields for authentication"""
     first_name = models.CharField(max_length=30, null=True, blank=True)
     middle_name = models.CharField(max_length=30, blank=True, null=True)
     referral_code=models.CharField(max_length=5, blank=True, null=True)
@@ -59,6 +57,7 @@ class CustomUser(AbstractUser):
         return url
     
 class GarbageCollector(models.Model):
+    """Garbage Collectors model after signing up"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
     is_accepted= models.BooleanField(default=False)
 
@@ -71,6 +70,7 @@ class GarbageCollector(models.Model):
             
     
 class CustomerProfile(models.Model):
+    """Customer's profile after signing up"""
     account = models.OneToOneField(CustomUser, on_delete=models.CASCADE, null=True)
 
     def __str__(self):

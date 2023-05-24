@@ -25,23 +25,25 @@ from .serializers import (
     MyCompanyEditSerializer,
     ResetPasswordSerializer,
 )
-from accounts.models import CustomUser
+from accounts.models import CustomUser, CustomerProfile
 from garbage_app.models import Location
 from .serializers import (
     LoginSerializer,
     SetNewPasswordSerializer,
     LocationSerializer,
 )
+from .utils import Utils
 
+class LoginView(TokenObtainPairView):
+   """Views for Login in a user"""
+   serializer_class = LoginSerializer
+   renderer_classes = [CustomRenderer]
 
 class LogoutView(APIView):
+   """View for login out a user"""
    def post(self, request, *args, **kwargs):
       request.user.auth_token.delete()
       return Response(status=status.HTTP_200_OK)
-
-class LoginView(TokenObtainPairView):
-   serializer_class = LoginSerializer
-   renderer_classes = [CustomRenderer]
 
 class ChangePasswordAV(generics.UpdateAPIView):
    queryset = CustomUser.objects.all()
@@ -61,17 +63,12 @@ class CustomerRegistrationView(generics.CreateAPIView):
          last_name = serializer.validated_data.get("last_name")
          email = serializer.validated_data.get("email")
          print(email)
-         # location_id = serializer.validated_data.get("customer_location")["id"]
-         print(serializer.data)
          location_name = serializer.validated_data.get("customer_location").get("name")
-         print(location_name)
          location = get_object_or_404(Location, name=location_name)
-         print(location)
-         # print(location)
          password = serializer.validated_data.get("password")
-         # confirm_password = serializer.validated_data.get("password2")
          account = CustomUser.objects.create_user(
                first_name=first_name, last_name=last_name, username=username, customer_location=location, email=email, password=password)
+         CustomerProfile.objects.get_or_create(account=account)
          data["status"] = "success"
          data["username"] = account.username
          data["email"] = account.email
@@ -79,6 +76,7 @@ class CustomerRegistrationView(generics.CreateAPIView):
          data["refresh_token"] = str(refresh_token)
          data["access_token"] = str(refresh_token.access_token)
          return Response(data, status=status.HTTP_201_CREATED)
+     
       data["error"] = serializer.errors
       data["status"] = "success"
       return Response(data, status=status.HTTP_400_BAD_REQUEST)
@@ -99,8 +97,6 @@ class CompanyRegistrationView(generics.CreateAPIView):
          garbage_collector_locations = serializer.validated_data.get("garbage_collector_location")
          # print(garbage_collector_locations)
          password = serializer.validated_data.get("password")
-         # confirm_password = serializer.validated_data.get("password2")
-            
          account = CustomUser.objects.create_user(
                company_name=company_name, phone_number=phone_number, username=username, email=email, password=password)
          # Create garbage collector locations
@@ -122,9 +118,7 @@ class CompanyRegistrationView(generics.CreateAPIView):
 
 class ForgotPassordAV(APIView):
    serializer_class = ResetPasswordSerializer
-
    def post(self, request, *args, **kwargs):
-
       serializer = self.serializer_class(data=request.data)
       serializer.is_valid(raise_exception=True)
       lower_email = serializer.validated_data.get("email").lower()
@@ -149,7 +143,6 @@ class ForgotPassordAV(APIView):
 class ResetPassordAV(APIView):
    serializer_class = ResetPasswordSerializer
    renderer_classes = [CustomRenderer]
-
    def get(self, request, uuidb64, token):
       try:
          id = smart_str(urlsafe_base64_decode(uuidb64))
@@ -177,12 +170,9 @@ class CustomerEditView(UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         return Response({"status": "success", "message": "Password was successfully reset"}, status=status.HTTP_200_OK)
 
-
-
 class MyCompanyEditView(generics.UpdateAPIView):
    serializer_class = MyCompanyEditSerializer
    queryset = CustomUser.objects.all()
-
 
 class ListCreateLocationView(generics.ListCreateAPIView):
    serializer_class= LocationSerializer

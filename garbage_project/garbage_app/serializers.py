@@ -22,6 +22,8 @@ class LocationDocumentSerializer(DocumentSerializer):
         document = LocationDocument
         fields = '__all__'
 
+
+
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model=Location
